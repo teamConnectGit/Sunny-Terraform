@@ -1,25 +1,25 @@
-
-resource "aws_instance" "web_server1" {
-  ami                    = "ami-0866a3c8686eaeeba"
+resource "aws_instance" "web_server_public" {
+  count                  = var.instance_count
+  ami                    = local.ami
   instance_type          = var.instance_type
-  key_name               = "Terraform-Key"
-  user_data_base64       = base64encode(file("init.sh"))
+  key_name               = local.key_name
+  user_data_base64       = local.user_data_base64
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.web_server_public_sg.id]
   tags = {
-    Name = "${var.tag_name}-public"
+    Name = "${local.tag_name}-public-${count.index + 1}"
   }
 }
 
-resource "aws_instance" "web_server2" {
-  ami                    = "ami-0866a3c8686eaeeba"
+resource "aws_instance" "web_server_private" {
+  count                  = var.instance_count
+  ami                    = local.ami
   instance_type          = var.instance_type
-  key_name               = "Terraform-Key"
-  user_data_base64       = base64encode(file("init.sh"))
+  key_name               = local.key_name
   subnet_id              = aws_subnet.private_subnet.id
   vpc_security_group_ids = [aws_security_group.web_server_private_sg.id]
   tags = {
-    Name = "${var.tag_name}-private"
+    Name = "${local.tag_name}-private-${count.index + 1}"
   }
 }
 
@@ -118,6 +118,13 @@ resource "aws_security_group" "web_server_public_sg" {
     to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"] # Allow HTTP access from any IP address
+  }
+
+  ingress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Allow HTTPS access from any IP address
   }
 
   # Egress rules (outgoing traffic)
